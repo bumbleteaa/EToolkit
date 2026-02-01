@@ -1,0 +1,6 @@
+@EToolkit_HostAddress = http://localhost:5206
+
+GET {{EToolkit_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
