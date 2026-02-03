@@ -16,6 +16,6 @@ public class RecordFilterPreviewService
     public IReadOnlyList<CsvComponentPlacementRow> Preview(Stream csvStream, int take = 280)
     {
         var rows = _recordImporter.Import(csvStream);
-        return _recordFilter.FilterByFootprint(rows).Take(take).ToList();
+        return _recordFilter.FilteredRecord(rows).Take(take).ToList();
     }
 }

@@ -16,7 +16,7 @@ public class RecordImportUseCase : IRecordImportUseCase
     public Task<List<CsvComponentPlacementRow>> ExecuteAsync(Stream csvStream)
     {
         var rows = _importer.Import(csvStream);
-        var filtered = _filter.FilterByFootprint(rows).ToList();
+        var filtered = _filter.FilteredRecord(rows).ToList();
         
         return Task.FromResult(filtered);
     }

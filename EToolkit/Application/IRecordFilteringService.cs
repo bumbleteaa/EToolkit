@@ -4,5 +4,5 @@ namespace EToolkit.Application;
 
 public interface IRecordFilteringService
 {
-        IEnumerable<CsvComponentPlacementRow> FilterByFootprint(IEnumerable<CsvComponentPlacementRow> rows);
+        IEnumerable<CsvComponentPlacementRow> FilteredRecord(IEnumerable<CsvComponentPlacementRow> rows);
 }
