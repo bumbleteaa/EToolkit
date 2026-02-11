@@ -4,64 +4,89 @@ namespace EToolkit.Application;
 
 public class RecordFilteringService : IRecordFilteringService
 {
-    private static readonly HashSet<string> AllowedFootprints = new(StringComparer.OrdinalIgnoreCase)
+    private readonly ILogger<RecordFilteringService> _logger;
+    private readonly FootprintNormalizer _normalizer;
+    
+    // Deduplicate logs per canonical footprint
+    private readonly HashSet<string> _loggedRejected = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _loggedGeneric = new(StringComparer.Ordinal);
+
+    public RecordFilteringService(ILogger<RecordFilteringService> logger, FootprintNormalizer normalizer)
     {
-        "R0603",
-        "603",
-        "805",
-        "1206",
-        "SOIC",         // If footprint is too much, why we not block the DNP instead?
-        "SOIC 12",
-        "so8",
-        "soic8",
-        "TSSOP14",
-        "SOP50P310X90-8N",
-        "SM7745HEV660M",
-        "C1210",
-    };
+        _logger = logger;
+        _normalizer = normalizer;
+    }
+    
+
     
     //Don't return any value if !IsPlaceable
     public IEnumerable<CsvComponentPlacementRow> FilteredRecord(IEnumerable<CsvComponentPlacementRow> rows)
     {
         foreach (var row in rows)
         {
-            if (!IsPlacable(row))
+            if (!IsPlaceable(row))
                 continue;
 
             yield return row;
         }
     }
 
-    private bool IsPlacable(CsvComponentPlacementRow row)
+    private bool IsPlaceable(CsvComponentPlacementRow row)
     {
-        //Initial rule: Block all empty value
+        
+        //Rule 0: Block all empty value
         if (string.IsNullOrWhiteSpace(row.Value))
-            return false; //If empty, skip
-
-        //Rule 1: DNP is non negotiable
-        if (row.Value.Trim().Equals("DNP", StringComparison.OrdinalIgnoreCase)) 
+        {
+            LogRejected("EMPTY_VALUE", row, null);
             return false;
+        }
+        //Rule 1: DNP is non negotiable
+        if (ContainsDnp(row.Value) || ContainsDnp(row.Desc) || ContainsDnp(row.Footprint) || ContainsDnp(row.Name))
+        {
+            LogRejected("DNP", row, null);
+            return false;
+        }
         
         //Rule 2: Allow eligible footprint
-        var footprint = row.Footprint.Trim();
+        var n = _normalizer.Normalize(row.Footprint);
+
+        switch (n.Kind)
+        {
+            case FootprintNormalizer.NormalizedKind.StandardPackage:
+            case FootprintNormalizer.NormalizedKind.FamilyFootprint: 
+                return true;
+            
+            case  FootprintNormalizer.NormalizedKind.GenericFootprint: LogGeneric(row, n);
+                return false;
+            case FootprintNormalizer.NormalizedKind.Unknown:
+            default: 
+                LogRejected("UNSUPPORTED_FOOTPRINT", row, n);
+                return false;
+        }
+    }
+    private static bool ContainsDnp(string? s) => 
+        !string.IsNullOrWhiteSpace(s) && 
+        s.Trim().Equals("DNP", StringComparison.OrdinalIgnoreCase);
+
+    private void LogGeneric(CsvComponentPlacementRow row, FootprintNormalizer.NormalizedFootprint normal)
+    {
+        var dedupeKey = $"GENERIC::{normal.Canonical}";
+        if (!_loggedGeneric.Contains(dedupeKey))
+            return;
         
-        if (!AllowedFootprints.Contains(footprint))
-            return false;
+        _logger.LogWarning("This generic footprint: Token='{Token}', Raw='{Raw}', Name='{Name}', Value='{Value}', Desc='{Desc}', Side='{Side}'",
+        normal.Canonical, normal.Raw, row.Name, row.Value, row.Desc, row.Side);
+    }
 
-        //Question :
-        // If EDA footprint is very random depends on engineers, what a rule that make the filtering works?
-        // What if we make the "and" logic? more than one condition is valid? But what make the source of truth?
-
-        //Proposed Rule :
-        // Check if ANY of these fields contain DNP indicators: Look in the Value field, then the Description field,
-        // then the Footprint field, then the Component Name field, and check each one for patterns that indicate
-        // "do not populate." If I find DNP markers in any of these locations, block that row.
-
-        //Rule Layer
-        // 1) Block any DNP Value (Non Negotiable)
-        // 2) Allow some footprint that eligible, but
-        // 3)  whitelist when the Value is containing "C, R, H, U" 
+    private void LogRejected(string reason, CsvComponentPlacementRow row,
+        FootprintNormalizer.NormalizedFootprint normal)
+    {
+        var canonical = normal?.Canonical ?? string.Empty;
+        var dedupekey = $"{reason}::{canonical}";
+        if (!_loggedRejected.Add(dedupekey))
+            return;
         
-        return true;
+        _logger.LogInformation("Placement row rejected: Reason='{Reason}', Name='{Name}', Value='{Value}', FootprintRaw='{Footprint}', Canonical='{Canonical}', Kind='{Kind}', Side='{Side}'",
+            reason, row.Name, row.Value, row.Footprint, canonical, normal?.Kind.ToString(), row.Side);
     }
 }

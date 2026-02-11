@@ -9,6 +9,7 @@ builder.Services.AddScoped<IRecordImportUseCase, RecordImportUseCase>();
 builder.Services.AddScoped<RecordImportService>();
 builder.Services.AddScoped<ICsvRecordImporter, CsvRecordImporter>();
 builder.Services.AddScoped<RecordFilterPreviewService>();
+builder.Services.AddSingleton<FootprintNormalizer>();
 builder.Services.AddControllers();
 
 var app = builder.Build();
