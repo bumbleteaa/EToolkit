@@ -37,18 +37,22 @@ public class PlacementController : ControllerBase
     }
 
     [HttpPost("filter-preview")]
-    public IActionResult FilterPreview([FromForm] IFormFile file, [FromServices] RecordFilterPreviewService service)
+    public IActionResult FilterPreview(
+        [FromForm] IFormFile file, 
+        [FromQuery] int? take,
+        [FromServices] RecordFilterPreviewService service)
     {
         if (file == null || file.Length == 0)
             return BadRequest("Csv Required");
         
         using var stream = file.OpenReadStream();
-        var filtered = service.Preview(stream);
+        var filtered = service.Preview(stream, take);
         
         return Ok(new
         {
-            Count = filtered.Count,
-            Data = filtered.Take(280)
+            Count = filtered.TotalCount,
+            Truncated = filtered.IsTruncated,
+            Data = filtered.Rows
         });
     }
 }
