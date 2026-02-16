@@ -1,6 +1,17 @@
-@EToolkit_HostAddress = http://localhost:5206
+@base = http://localhost:5206
+@boundary = ----ETKBoundary7MA4YWxkTrZu0gW
+@filePath = /home/liora/workspace/data/deck.csv
 
-GET {{EToolkit_HostAddress}}/weatherforecast/
+### filter preview (multipart explicit)
+POST {{base}}/api/placement/filter-preview?take=200
 Accept: application/json
+Content-Type: multipart/form-data; boundary={{boundary}}
+
+--{{boundary}}
+Content-Disposition: form-data; name="file"; filename="deck.csv"
+Content-Type: text/csv
+
+< {{filePath}}
+--{{boundary}}--
 
 ###

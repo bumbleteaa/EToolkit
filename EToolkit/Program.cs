@@ -11,11 +11,10 @@ builder.Services.AddScoped<ICsvRecordImporter, CsvRecordImporter>();
 builder.Services.AddScoped<RecordFilterPreviewService>();
 builder.Services.AddSingleton<FootprintNormalizer>();
 builder.Services.AddControllers();
+builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
-app.UseRouting();
-
-app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
-
+app.MapControllers();
+app.MapHealthChecks("/health");
 app.Run();
