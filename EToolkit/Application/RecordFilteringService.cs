@@ -14,7 +14,7 @@ public sealed class RecordFilteringService : IRecordFilteringService
     public RecordFilteringService(ILogger<RecordFilteringService> logger, FootprintNormalizer normalizer)
     {
         _logger = logger;
-        _normalizer = normalizer;
+        _normalizer = normalizer ?? throw new ArgumentNullException(nameof(normalizer));
     }
 
 
@@ -35,7 +35,7 @@ public sealed class RecordFilteringService : IRecordFilteringService
     {
 
         //Rule 0: Block all empty value
-        if (string.IsNullOrWhiteSpace(row.Value))
+        if (string.IsNullOrWhiteSpace(row.Footprint))
         {
             LogRejected("EMPTY_VALUE", row, normal: null);
             return false;

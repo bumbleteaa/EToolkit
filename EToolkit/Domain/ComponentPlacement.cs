@@ -3,15 +3,15 @@
 public record ComponentPlacement
 {
     Component Component { get; }
-    string FeederId { get; }
-    string Nozzle { get; }
+    string? FeederId { get; }
+    string? Nozzle { get; }
     Side Side { get; }
     Position Position { get; }
     double Rotation { get; }
 
     public ComponentPlacement(Component component,
-        string feederId,
-        string nozzle,
+        string? feederId,
+        string? nozzle,
         Side side,
         Position position,
         double rotation)

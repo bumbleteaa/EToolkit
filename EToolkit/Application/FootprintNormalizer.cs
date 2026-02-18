@@ -62,7 +62,8 @@ public sealed class FootprintNormalizer
         "HOLE",
         "FID",
         "FIDUCIAL",
-        "DNP"
+        "DNP",
+        "P100"
     };
 
     /*Normalize is the main method of the class, it takes a raw footprint string as input, and returns a NormalizedFootprint record as output. The normalization process follows these rules:
