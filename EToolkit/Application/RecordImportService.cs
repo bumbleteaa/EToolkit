@@ -6,7 +6,7 @@ using EToolkit.Infrastructure;
 namespace EToolkit.Application;
 
 // Importing service that reads a CSV stream and converts it to a list of ComponentPlacement records.
-public class RecordImportService
+public class RecordImportService : IRecordImportService
 {
     public IReadOnlyList<ComponentPlacement> Import(Stream csvStream)
     {

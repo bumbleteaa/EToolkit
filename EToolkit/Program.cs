@@ -6,7 +6,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddScoped<IRecordFilteringService, RecordFilteringService>();
 builder.Services.AddScoped<IRecordImportUseCase, RecordImportUseCase>();
-builder.Services.AddScoped<RecordImportService>();
+builder.Services.AddScoped<IRecordImportService, RecordImportService>();
 builder.Services.AddScoped<ICsvRecordImporter, CsvRecordImporter>();
 builder.Services.AddScoped<RecordExportService>();
 builder.Services.AddScoped<RecordFilterPreviewService>();

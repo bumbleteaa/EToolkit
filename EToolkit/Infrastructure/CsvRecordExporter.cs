@@ -23,7 +23,6 @@ public sealed class CsvRecordExporter : IRecordExportService<CsvComponentPlaceme
         await using var csv = new CsvWriter(writer, config);
 
         csv.Context.RegisterClassMap<CsvRowMap>();
-        csv.NextRecord();
 
         foreach (var row in rows)
         {

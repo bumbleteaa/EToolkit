@@ -8,10 +8,10 @@ namespace EToolkit.Controller;
 [Route("api/placement")]
 public class PlacementController : ControllerBase
 {
-    private readonly RecordImportService _importService;
+    private readonly IRecordImportService _importService;
     private readonly RecordExportService _exportService;
 
-    public PlacementController(RecordImportService importService, RecordExportService exportService)
+    public PlacementController(IRecordImportService importService, RecordExportService exportService)
     {
         _importService = importService;
         _exportService = exportService;
