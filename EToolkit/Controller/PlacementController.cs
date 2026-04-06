@@ -9,7 +9,7 @@ namespace EToolkit.Controller;
 public class PlacementController : ControllerBase
 {
     private readonly IRecordImportService _importService;
-    private readonly RecordExportService _exportService;
+    private readonly IRecordExportService _exportService;
 
     public PlacementController(IRecordImportService importService, RecordExportService exportService)
     {

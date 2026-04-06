@@ -3,18 +3,18 @@ using EToolkit.Infrastructure;
 
 namespace EToolkit.Application;
 
-public sealed class RecordExportService
+public sealed class RecordExportService : IRecordExportService
 {
     private const int HardCap = 10000;
 
     private readonly ICsvRecordImporter _importer;
     private readonly IRecordFilteringService _filteringService;
-    private readonly IRecordExportService<CsvComponentPlacementRow> _exporter;
+    private readonly IRecordWriterService<CsvComponentPlacementRow> _exporter;
 
     public RecordExportService(
         ICsvRecordImporter importer,
         IRecordFilteringService filteringService,
-        IRecordExportService<CsvComponentPlacementRow> exporter)
+        IRecordWriterService<CsvComponentPlacementRow> exporter)
     {
         _importer = importer;
         _filteringService = filteringService;

@@ -1,6 +1,6 @@
 namespace EToolkit.Application;
 
-public interface IRecordExportService<in T>
+public interface IRecordExportService
 {
-    Task WriteAsync(IEnumerable<T> rows, Stream output, CancellationToken cancellation);
+    Task ExportAsync(Stream csvInput, Stream csvOutput, int? take, CancellationToken cancellation);
 }

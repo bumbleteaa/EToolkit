@@ -7,7 +7,7 @@ using EToolkit.Infrastructure;
 
 namespace EToolkit.Infrastructure;
 
-public sealed class CsvRecordExporter : IRecordExportService<CsvComponentPlacementRow>
+public sealed class CsvRecordExporter : IRecordWriterService<CsvComponentPlacementRow>
 {
     public async Task WriteAsync(IEnumerable<CsvComponentPlacementRow> rows, Stream output, CancellationToken cancellation)
     {
