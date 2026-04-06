@@ -2,7 +2,8 @@
 
 namespace EToolkit.Application;
 
-public class RecordImportUseCase : IRecordImportUseCase 
+// Use case for importing records from a CSV stream, applying filtering, and returning the filtered list of CsvComponentPlacementRow.
+public class RecordImportUseCase : IRecordImportUseCase
 {
     private readonly ICsvRecordImporter _importer;
     private readonly IRecordFilteringService _filter;
@@ -17,7 +18,7 @@ public class RecordImportUseCase : IRecordImportUseCase
     {
         var rows = _importer.Import(csvStream);
         var filtered = _filter.FilteredRecord(rows).ToList();
-        
+
         return Task.FromResult(filtered);
     }
 }

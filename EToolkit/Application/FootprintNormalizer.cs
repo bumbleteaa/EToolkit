@@ -63,7 +63,8 @@ public sealed class FootprintNormalizer
         "FID",
         "FIDUCIAL",
         "DNP",
-        "P100"
+        "P100",
+        "H"
     };
 
     /*Normalize is the main method of the class, it takes a raw footprint string as input, and returns a NormalizedFootprint record as output. The normalization process follows these rules:
@@ -79,14 +80,14 @@ public sealed class FootprintNormalizer
 
         var key = ToAlnumKey(raw);
 
-        //Normalize passive component footprint 
+        //* Normalize passive component footprint 
         var passive = TryNormalizePassive(raw);
         if (passive is not null)
             return new NormalizedFootprint(raw, key, passive, NormalizedKind.StandardPackage, Family: "PASSIVE", Reason: "Passive Component");
 
         var family = ExtractFamilyFootrpint(key);
 
-        //*Normalize any family footprint 
+        //* Normalize any family footprint 
         if (family is null) return new NormalizedFootprint(raw, key, key, NormalizedKind.Unknown, Reason: "Unknown Footprint");
 
         if (family is not null && NonPlaceableFootprint.Contains(family))

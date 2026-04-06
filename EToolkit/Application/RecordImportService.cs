@@ -5,8 +5,7 @@ using EToolkit.Infrastructure;
 
 namespace EToolkit.Application;
 
-//Bring placement data into the system
-//converts to Placement (domain)
+// Importing service that reads a CSV stream and converts it to a list of ComponentPlacement records.
 public class RecordImportService
 {
     public IReadOnlyList<ComponentPlacement> Import(Stream csvStream)
@@ -18,6 +17,7 @@ public class RecordImportService
         var rows = csv.GetRecords<CsvComponentPlacementRow>();
         var result = new List<ComponentPlacement>();
 
+        // Convert each CSV row to a ComponentPlacement domain model using the mapping defined in CsvFileMapping.
         foreach (var row in rows)
         {
             result.Add(CsvFileMapping.ToDomain(row));

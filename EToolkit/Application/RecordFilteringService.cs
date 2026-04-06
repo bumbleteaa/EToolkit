@@ -73,7 +73,7 @@ public sealed class RecordFilteringService : IRecordFilteringService
     private void LogGeneric(CsvComponentPlacementRow row, FootprintNormalizer.NormalizedFootprint normal)
     {
         var dedupeKey = $"GENERIC::{normal.Canonical}";
-        if (!_loggedGeneric.Contains(dedupeKey))
+        if (!_loggedGeneric.Add(dedupeKey))
             return;
 
         _logger.LogWarning("This generic footprint: Token='{Token}', Raw='{Raw}', Name='{Name}', Value='{Value}', Desc='{Desc}', Side='{Side}'",

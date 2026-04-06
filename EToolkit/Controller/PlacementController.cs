@@ -51,12 +51,7 @@ public class PlacementController : ControllerBase
         using var stream = file.OpenReadStream();
         var filtered = service.Preview(stream, take);
 
-        return Ok(new
-        {
-            Count = filtered.TotalCount,
-            Truncated = filtered.IsTruncated,
-            Data = filtered.Rows
-        });
+        return Ok(filtered);
     }
 
     [HttpPost("export")]
