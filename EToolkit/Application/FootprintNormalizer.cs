@@ -2,7 +2,7 @@
 
 // * This class is responsible for normalizing the footprint of a component to a canonical form, which can be used for filtering and grouping components. It also provides a reason for the normalization, which can be used for logging and debugging purposes.
 
-public sealed class FootprintNormalizer
+public sealed class FootprintNormalizer : IFootprintNormalizer
 {
     //Passive component are often represented by their size, we can normalize them to a canonical form if they are in the common size list
     private static readonly HashSet<String> PassiveComponent = new(StringComparer.Ordinal)
@@ -85,7 +85,7 @@ public sealed class FootprintNormalizer
         if (passive is not null)
             return new NormalizedFootprint(raw, key, passive, NormalizedKind.StandardPackage, Family: "PASSIVE", Reason: "Passive Component");
 
-        var family = ExtractFamilyFootrpint(key);
+        var family = ExtractFamilyFootprint(key);
 
         //* Normalize any family footprint 
         if (family is null) return new NormalizedFootprint(raw, key, key, NormalizedKind.Unknown, Reason: "Unknown Footprint");
@@ -123,7 +123,7 @@ public sealed class FootprintNormalizer
     }
 
     //TryDetectFamilyFootprint is used to detect if the footprint can be considered as a family footprint, it checks if the alphanumeric key starts with a known family prefix, and return the family name if found. This is because some footprints are represented in a way that the family name is followed by some digits or other characters, and we want to group them together as a family for filtering and grouping purposes.
-    private static string? ExtractFamilyFootrpint(string key)
+    private static string? ExtractFamilyFootprint(string key)
     {
         if (string.IsNullOrEmpty(key)) return null;
         var i = 0;
@@ -132,23 +132,5 @@ public sealed class FootprintNormalizer
 
         return key[..i]; //If the key starts with letters followed by digits, we can consider the letters as the family prefix, and return it as the canonical form for family footprint. For example, SOT23-5 can be normalized to SOT23 as the family footprint.
     }
-
-    //StandardPackage = PassiveComponent + JedecComponent, FamilyFootprint = Footprint that can be detected as family footprint, GenericFootprint = Footprint that can be detected as generic footprint, Unknown = Footprint that cannot be normalized to a known form.
-    public enum NormalizedKind
-    {
-        StandardPackage,
-        NonPlaceable,
-        GenericFootprint,
-        Unknown
-    }
-
-    //record to represent the normalized footprint, it contains the raw footprint, the alphanumeric key, the canonical form, the kind of normalization, the family if it's a family footprint, and the reason for normalization.
-    public record NormalizedFootprint(
-        string Raw, //The original raw footprint string
-        string Key, //The alphanumeric key used for normalization, it removes all non-alphanumeric characters and convert to upper case
-        string Canonical, //The canonical form of the footprint, it is used for filtering and grouping components, it can be the same as the key if the footprint cannot be normalized to a known form
-        NormalizedKind Kind, //The kind of normalization, it can be StandardPackage, FamilyFootprint, GenericFootprint, or Unknown
-        string? Family = null, //The family of the footprint if it's a family footprint, it is used for grouping components that belong to the same family, it can be null if the footprint is not a family footprint
-        string? Reason = null); //The reason for normalization, it is used for logging and debugging purposes, it can be null if the normalization is successful and does not need a reason.
 
 }

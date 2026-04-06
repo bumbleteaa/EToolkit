@@ -11,7 +11,7 @@ builder.Services.AddScoped<ICsvRecordImporter, CsvRecordImporter>();
 builder.Services.AddScoped<IRecordExportService, RecordExportService>();
 builder.Services.AddScoped<RecordFilterPreviewService>();
 builder.Services.AddScoped<IRecordWriterService<CsvComponentPlacementRow>, CsvRecordExporter>();
-builder.Services.AddSingleton<FootprintNormalizer>();
+builder.Services.AddSingleton<IFootprintNormalizer, FootprintNormalizer>();
 builder.Services.AddControllers();
 builder.Services.AddHealthChecks();
 

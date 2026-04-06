@@ -11,7 +11,7 @@ public class PlacementController : ControllerBase
     private readonly IRecordImportService _importService;
     private readonly IRecordExportService _exportService;
 
-    public PlacementController(IRecordImportService importService, RecordExportService exportService)
+    public PlacementController(IRecordImportService importService, IRecordExportService exportService)
     {
         _importService = importService;
         _exportService = exportService;

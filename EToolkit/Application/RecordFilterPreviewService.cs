@@ -1,5 +1,4 @@
 ﻿using EToolkit.Infrastructure;
-using Swashbuckle.AspNetCore.Swagger;
 
 namespace EToolkit.Application;
 
@@ -7,11 +6,15 @@ public class RecordFilterPreviewService
 {
     private const int HardCap = 1000;
     private const int MaxIssues = 50;
+
     private readonly ICsvRecordImporter _recordImporter;
     private readonly IRecordFilteringService _recordFilter;
-    private readonly FootprintNormalizer _footprintNormalizer;
+    private readonly IFootprintNormalizer _footprintNormalizer;
 
-    public RecordFilterPreviewService(ICsvRecordImporter recordImporter, IRecordFilteringService recordFilter, FootprintNormalizer footprintNormalizer)
+    public RecordFilterPreviewService(
+        ICsvRecordImporter recordImporter,
+        IRecordFilteringService recordFilter,
+        IFootprintNormalizer footprintNormalizer)
     {
         _recordImporter = recordImporter;
         _recordFilter = recordFilter;
@@ -28,7 +31,6 @@ public class RecordFilterPreviewService
         var data = new List<CsvComponentPlacementRow>(capacity);
 
         var total = 0;
-
         var unknown = new Dictionary<string, UnknownAgg>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var r in filtered)
@@ -39,7 +41,7 @@ public class RecordFilterPreviewService
             var rawFootprint = r.Footprint ?? string.Empty;
             var normalizedFootprint = _footprintNormalizer.NormalizeFootprint(rawFootprint);
 
-            if (normalizedFootprint.Kind == FootprintNormalizer.NormalizedKind.Unknown)
+            if (normalizedFootprint.Kind == NormalizedKind.Unknown)
             {
                 var key = string.IsNullOrEmpty(normalizedFootprint.Key) ? "(EMPTY)" : normalizedFootprint.Key;
 
@@ -53,24 +55,19 @@ public class RecordFilterPreviewService
                         SampleRowNumber: total,
                         Count: 0
                     );
-
-                    unknown[key] = agg with { Count = agg.Count + 1 };
                 }
+
+                unknown[key] = agg with { Count = agg.Count + 1 };
             }
-            //If 
+
             if (!includeTotalCount && data.Count >= limit)
                 break;
         }
 
         var effectiveTotal = includeTotalCount ? total : data.Count;
-        var truncated = includeTotalCount ? data.Count < total : false;
+        var truncated = includeTotalCount && data.Count < total;
 
-        var previewResult = new PreviewResult(
-            effectiveTotal,
-            data,
-            truncated,
-            limit
-        );
+        var previewResult = new PreviewResult(effectiveTotal, data, truncated, limit);
 
         var issues = unknown.Values
             .OrderByDescending(x => x.Count)
@@ -78,7 +75,7 @@ public class RecordFilterPreviewService
             .Select(x => new PipelineIssue(
                 Code: "UNKNOWN_FOOTPRINT",
                 Severity: Severity.Warning,
-                Message: $"Footprint '{x.SampleRaw}' (key: '{x.Key}') is unknown. Sample occurrence at row {x.SampleRowNumber} with designator '{x.SampleDesignator}' on side '{x.SampleSide}'. Total occurrences: {x.Count}.",
+                Message: $"Footprint '{x.SampleRaw}' (key: '{x.Key}') is unknown. Sample at row {x.SampleRowNumber}, designator '{x.SampleDesignator}', side '{x.SampleSide}'. Total: {x.Count}.",
                 Context: new IssueContext(
                     FootprintRaw: x.SampleRaw,
                     FootprintKey: x.Key,
@@ -90,12 +87,9 @@ public class RecordFilterPreviewService
             ))
             .ToArray();
 
-        var isExportReady = unknown.Count == 0;
-
-        // If there are unknown footprints, we consider the export not ready, as it indicates potential issues with the data that may need to be addressed before exporting. The presence of unknown footprints can lead to incorrect filtering and grouping in the final output, so it's important to surface these issues in the preview stage to allow for corrective actions.
         var report = new PipelineReport(
             Stage: "filter-preview",
-            IsExportReady: isExportReady,
+            IsExportReady: unknown.Count == 0,
             RulesetVersion: null,
             Issues: issues
         );
@@ -106,10 +100,8 @@ public class RecordFilterPreviewService
     private static int ResolveLimit(int? take)
     {
         if (take is null) return HardCap;
-
         if (take.Value <= 0)
             throw new ArgumentOutOfRangeException(nameof(take), "Take must be > 0");
-
         return Math.Min(take.Value, HardCap);
     }
 
