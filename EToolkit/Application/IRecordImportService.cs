@@ -1,8 +1,8 @@
-using EToolkit.Domain;
+﻿using EToolkit.Infrastructure;
 
 namespace EToolkit.Application;
 
 public interface IRecordImportService
 {
-    IReadOnlyList<ComponentPlacement> Import(Stream csvStream);
+    List<CsvComponentPlacementRow> Import(Stream csvStream);
 }

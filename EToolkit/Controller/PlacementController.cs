@@ -26,11 +26,10 @@ public class PlacementController : ControllerBase
         try
         {
             using var stream = file.OpenReadStream();
-            var placements = _importService.Import(stream);
-
+            var placement = _importService.Import(stream);
             return Ok(new
             {
-                Count = placements.Count,
+                Count = placement.Count
             });
         }
         catch (Exception ex)
