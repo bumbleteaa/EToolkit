@@ -9,59 +9,56 @@ public class RecordFilterPreviewService
 
     private readonly ICsvRecordImporter _recordImporter;
     private readonly IRecordFilteringService _recordFilter;
-    private readonly IFootprintNormalizer _footprintNormalizer;
+    // IFootprintNormalizer tidak lagi diperlukan di sini — hasil normalisasi
+    // sudah ada di AnnotatedRow.Normalized, tidak perlu normalisasi ulang.
 
     public RecordFilterPreviewService(
         ICsvRecordImporter recordImporter,
-        IRecordFilteringService recordFilter,
-        IFootprintNormalizer footprintNormalizer)
+        IRecordFilteringService recordFilter)
     {
         _recordImporter = recordImporter;
         _recordFilter = recordFilter;
-        _footprintNormalizer = footprintNormalizer;
     }
 
     public PipelineResponse<PreviewResult> Preview(Stream csvStream, int? take, bool includeTotalCount = true)
     {
         var limit = ResolveLimit(take);
         var rows = _recordImporter.Import(csvStream);
-        var filtered = _recordFilter.FilteredRecord(rows);
+        var classified = _recordFilter.ClassifyRecords(rows); // semua baris, bukan hanya Accepted
 
-        var capacity = limit <= 10_000 ? limit : 10_000;
-        var data = new List<CsvComponentPlacementRow>(capacity);
+        var capacity = Math.Min(limit, 10_000);
+        var data = new List<AnnotatedRow>(capacity);
 
         var total = 0;
         var unknown = new Dictionary<string, UnknownAgg>(StringComparer.OrdinalIgnoreCase);
 
-        foreach (var r in filtered)
+        foreach (var annotated in classified)
         {
             total++;
-            if (data.Count < limit) data.Add(r);
+            if (data.Count < limit) data.Add(annotated);
 
-            var rawFootprint = r.Footprint ?? string.Empty;
-            var normalizedFootprint = _footprintNormalizer.NormalizeFootprint(rawFootprint);
-
-            if (normalizedFootprint.Kind == NormalizedKind.Unknown)
+            // Kita kumpulkan aggregasi hanya untuk Unknown — keduanya GENERIC dan UNKNOWN_FOOTPRINT
+            // adalah kandidat untuk dilaporkan ke operator sebagai item yang perlu ditinjau.
+            // Bug fix dari versi lama: sebelumnya preview mencari Unknown dari filtered rows
+            // (hanya Accepted), sehingga tidak mungkin ditemukan. Sekarang kita iterasi semua.
+            if (annotated.Status == RowStatus.Unknown && annotated.Normalized is { } n)
             {
-                var key = string.IsNullOrEmpty(normalizedFootprint.Key) ? "(EMPTY)" : normalizedFootprint.Key;
+                var key = string.IsNullOrEmpty(n.Key) ? "(EMPTY)" : n.Key;
 
                 if (!unknown.TryGetValue(key, out var agg))
-                {
                     agg = new UnknownAgg(
                         Key: key,
-                        SampleRaw: normalizedFootprint.Raw,
-                        SampleDesignator: r.Name,
-                        SampleSide: r.Side,
+                        SampleRaw: n.Raw,
+                        SampleDesignator: annotated.Row.Name,
+                        SampleSide: annotated.Row.Side,
                         SampleRowNumber: total,
                         Count: 0
                     );
-                }
 
                 unknown[key] = agg with { Count = agg.Count + 1 };
             }
 
-            if (!includeTotalCount && data.Count >= limit)
-                break;
+            if (!includeTotalCount && data.Count >= limit) break;
         }
 
         var effectiveTotal = includeTotalCount ? total : data.Count;
@@ -69,13 +66,16 @@ public class RecordFilterPreviewService
 
         var previewResult = new PreviewResult(effectiveTotal, data, truncated, limit);
 
+        // Issues report mencakup semua Unknown — operator bisa melihat footprint mana
+        // yang paling sering muncul dan perlu diprioritaskan untuk iterasi database.
         var issues = unknown.Values
             .OrderByDescending(x => x.Count)
             .Take(MaxIssues)
             .Select(x => new PipelineIssue(
                 Code: "UNKNOWN_FOOTPRINT",
                 Severity: Severity.Warning,
-                Message: $"Footprint '{x.SampleRaw}' (key: '{x.Key}') is unknown. Sample at row {x.SampleRowNumber}, designator '{x.SampleDesignator}', side '{x.SampleSide}'. Total: {x.Count}.",
+                Message: $"Footprint '{x.SampleRaw}' (key: '{x.Key}') needs review. " +
+                         $"Sample at row {x.SampleRowNumber}, designator '{x.SampleDesignator}', side '{x.SampleSide}'. Total: {x.Count}.",
                 Context: new IssueContext(
                     FootprintRaw: x.SampleRaw,
                     FootprintKey: x.Key,
@@ -105,9 +105,11 @@ public class RecordFilterPreviewService
         return Math.Min(take.Value, HardCap);
     }
 
+    // Rows sekarang List<AnnotatedRow> — frontend mendapat status + RejectCode tiap baris
+    // untuk keperluan color coding: hijau (Accepted), kuning (Unknown), merah (Rejected).
     public sealed record PreviewResult(
         int TotalCount,
-        IReadOnlyList<CsvComponentPlacementRow> Rows,
+        IReadOnlyList<AnnotatedRow> Rows,
         bool IsTruncated,
         int LimitApplied
     );

@@ -1,11 +1,9 @@
 using EToolkit.Application;
 using EToolkit.Infrastructure;
 
-
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddScoped<IRecordFilteringService, RecordFilteringService>();
-builder.Services.AddScoped<IRecordImportService, RecordImportService>();
 builder.Services.AddScoped<IRecordImportService, RecordImportService>();
 builder.Services.AddScoped<ICsvRecordImporter, CsvRecordImporter>();
 builder.Services.AddScoped<IRecordExportService, RecordExportService>();

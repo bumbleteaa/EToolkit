@@ -21,14 +21,23 @@ public sealed class RecordExportService : IRecordExportService
         _exporter = exporter;
     }
 
-    public Task ExportAsync(Stream csvInput, Stream csvOutput, int? take, CancellationToken cancellation)
+    public Task ExportAsync(Stream csvInput, Stream csvOutput, int? take, IReadOnlySet<string> acceptedOverrides, CancellationToken cancellation)
     {
         var rows = _importer.Import(csvInput);
-        var filtered = _filteringService.FilteredRecord(rows);
+        var classified = _filteringService.ClassifyRecords(rows);
+
+        var exportable = classified.Where(r => r.Status == RowStatus.Accepted ||
+                        (r.Status == RowStatus.Unknown &&
+                         acceptedOverrides.Contains(r.Row.Name ?? string.Empty)))
+            .Select(r => r.Row);
 
         var limit = take is null ? HardCap : Math.Clamp(take.Value, 1, HardCap);
 
-        return _exporter.WriteAsync(filtered.Take(limit), csvOutput, cancellation);
+        return _exporter.WriteAsync(exportable.Take(limit), csvOutput, cancellation);
     }
 
+    public Task ExportAsync(Stream csvInput, Stream csvOutput, int? take, CancellationToken cancellation)
+    {
+        throw new NotImplementedException();
+    }
 }
