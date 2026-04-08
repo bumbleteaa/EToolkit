@@ -67,7 +67,7 @@ public sealed class FootprintNormalizer : IFootprintNormalizer
         "H",
         "P",
         "DSC",
-        "F"
+        "FD"
     };
 
     /*Normalize is the main method of the class, it takes a raw footprint string as input, and returns a NormalizedFootprint record as output. The normalization process follows these rules:

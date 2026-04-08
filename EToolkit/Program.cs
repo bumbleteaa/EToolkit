@@ -3,6 +3,7 @@ using EToolkit.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddScoped<IRecordIssueCollector, RecordIssueCollector>();
 builder.Services.AddScoped<IRecordFilteringService, RecordFilteringService>();
 builder.Services.AddScoped<IRecordImportService, RecordImportService>();
 builder.Services.AddScoped<ICsvRecordImporter, CsvRecordImporter>();
