@@ -1,8 +1,13 @@
+﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EToolkit", "EToolkit.csproj", "{3B704F4F-A31E-C478-4545-C77603D1F223}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "EToolkit.Test", "EToolkit.Test", "{AF328496-F172-EB53-5037-62ED01BA263F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Etoolkit.tests", "EToolkit.Test\Etoolkit.tests\Etoolkit.tests.csproj", "{E73AEADD-3E0D-4424-8098-01AAD7E581CF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -14,11 +19,18 @@ Global
 		{3B704F4F-A31E-C478-4545-C77603D1F223}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3B704F4F-A31E-C478-4545-C77603D1F223}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3B704F4F-A31E-C478-4545-C77603D1F223}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E73AEADD-3E0D-4424-8098-01AAD7E581CF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E73AEADD-3E0D-4424-8098-01AAD7E581CF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E73AEADD-3E0D-4424-8098-01AAD7E581CF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E73AEADD-3E0D-4424-8098-01AAD7E581CF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {CB154F30-1516-436B-ACDF-103250AB68A7}
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{E73AEADD-3E0D-4424-8098-01AAD7E581CF} = {AF328496-F172-EB53-5037-62ED01BA263F}
 	EndGlobalSection
 EndGlobal
