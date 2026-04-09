@@ -12,6 +12,16 @@ public sealed class RecordFilteringService : IRecordFilteringService
     private readonly IFootprintNormalizer _normalizer;
     private readonly IRecordIssueCollector _collector;
 
+    //Mappung each Normalized kind to classificaton decision
+    private static readonly IReadOnlyDictionary<NormalizedKind, Func<CsvComponentPlacementRow, NormalizedFootprint, AnnotatedRow>>
+    KindStrategies = new Dictionary<NormalizedKind, Func<CsvComponentPlacementRow, NormalizedFootprint, AnnotatedRow>>
+    {
+        [NormalizedKind.StandardPackage] = (row, n) => Accept(row, n),
+        [NormalizedKind.GenericFootprint] = (row, n) => Warn(row, "GENERIC_FOOTPRINT", n),
+        [NormalizedKind.Unknown] = (row, n) => Warn(row, "UNKNOWN_FOOTPRINT", n),
+        [NormalizedKind.NonPlaceable] = (row, n) => Reject(row, "NON_PLACEABLE", n),
+    };
+
     public RecordFilteringService(IFootprintNormalizer normalizer, IRecordIssueCollector collector)
     {
         _normalizer = normalizer ?? throw new ArgumentNullException(nameof(normalizer));
@@ -47,14 +57,9 @@ public sealed class RecordFilteringService : IRecordFilteringService
 
         var n = _normalizer.NormalizeFootprint(row.Footprint);
 
-        return n.Kind switch
-        {
-            NormalizedKind.StandardPackage => Accept(row, n),
-            NormalizedKind.GenericFootprint => Warn(row, "GENERIC_FOOTPRINT", n),
-            NormalizedKind.Unknown => Warn(row, "UNKNOWN_FOOTPRINT", n),
-            NormalizedKind.NonPlaceable => Reject(row, "NON_PLACEABLE", n),
-            _ => Reject(row, "UNHANDLED_KIND", n),
-        };
+        return KindStrategies.TryGetValue(n.Kind, out var strategy)
+            ? strategy(row, n)
+            : Reject(row, "UNHANDLED_KIND", n);
     }
 
     private static AnnotatedRow Accept(CsvComponentPlacementRow row, NormalizedFootprint n)
