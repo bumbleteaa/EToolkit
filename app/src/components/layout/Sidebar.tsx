@@ -38,7 +38,7 @@ export default function Sidebar({ open, activePage, onNavigate }: SidebarProps) 
                                     aria-current={isActive ? "page" : undefined}
                                     onClick={() => !item.disabled && onNavigate(item.id)}
                                     className={[
-                                        "nav-btn flex items-center gap-2.5 w-full px-2.5 py-2 text-[13px] text-left transition-colors relative group",
+                                        "nav-btn flex items-center gap-2.5 w-full px-2.5 py-2 text-[13px] text-left text-white transition-colors relative group",
                                         isActive ? "bg-black text-white font-medium" : "text-muted-foreground",
                                         item.disabled ? "opacity-40 cursor-not-allowed" : "",
                                     ].join(" ")}

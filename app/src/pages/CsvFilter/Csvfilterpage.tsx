@@ -5,17 +5,6 @@ import { LoadingState } from "./Loadingstate";
 import { ResultState } from "./Resultstate";
 import { MOCK_ROWS } from "../../data/Mockrows";
 
-// ─── State machine ──────────────────────────────────────────────────────────
-//
-//  Upload ──(file valid + submit)──► Loading ──(200 OK)──► Result
-//                ▲                       │
-//                └───────(error)─────────┘
-//
-// CsvFilterPage adalah satu-satunya tempat yang boleh mengubah `phase`.
-// Komponen child (UploadState, LoadingState, ResultState) hanya menerima
-// props dan memanggil callback — mereka tidak tahu tentang state machine ini.
-// ────────────────────────────────────────────────────────────────────────────
-
 type Phase = "upload" | "loading" | "result";
 
 // USE_MOCK mengontrol apakah /import akan benar-benar dipanggil atau tidak.
@@ -43,8 +32,7 @@ export function CsvFilterPage() {
             return;
         }
 
-        // ── Integrasi nyata ke /import ──────────────────────────────────────
-        // Akan diaktifkan di langkah selanjutnya (setelah mock diverifikasi).
+        // Integrasi nyata ke /import 
         try {
             const formData = new FormData();
             formData.append("file", file);
@@ -120,6 +108,9 @@ export function CsvFilterPage() {
             {phase === "result" && (
                 <div className="absolute bottom-6 right-6">
                     <button
+                        style={{ backgroundColor: "hsl(31.5 91.7% 62.6%)" }}
+                        onMouseEnter={e => (e.currentTarget.style.backgroundColor = "hsl(31.5 91.7% 52%)")}
+                        onMouseLeave={e => (e.currentTarget.style.backgroundColor = "hsl(31.5 91.7% 62.6%)")}
                         onClick={() => {
                             // Placeholder — akan diimplementasi di langkah Export
                             // (stateless: kirim ulang uploadedFile ke /export)
