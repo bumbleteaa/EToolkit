@@ -25,12 +25,25 @@ public class PlacementController : ControllerBase
         try
         {
             using var stream = file.OpenReadStream();
-            var placement = _importService.Import(stream);
-            return Ok(new { Count = placement.Count });
+            var rows = _importService.Import(stream);
+
+            var dto = rows.Select((r, i) => new ImportRowDto(
+                RowIndex: i + 1,
+                Status: r.Status.ToString(),   // enum → "Accepted" | "Unknown" | "Rejected"
+                Comp: r.Row.comp ?? "",
+                Name: r.Row.Name ?? "",
+                Value: r.Row.Value ?? "",
+                Footprint: r.Row.Footprint ?? "",
+                Desc: r.Row.Desc ?? "",
+                Side: r.Row.Side ?? "",
+                Issues: r.RejectCode is null ? [] : [r.RejectCode]
+            ));
+
+            return Ok(dto);
         }
         catch (Exception ex)
         {
-            return BadRequest(new { message = ex.Message });
+            return BadRequest(new { error = ex.Message });
         }
     }
 

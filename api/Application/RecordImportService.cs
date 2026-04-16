@@ -14,9 +14,9 @@ public class RecordImportService : IRecordImportService
         _filter = filter;
     }
 
-    public List<CsvComponentPlacementRow> Import(Stream csvStream)
+    public AnnotatedRow[] Import(Stream csvStream)
     {
         var rows = _importer.Import(csvStream);
-        return _filter.FilteredRecord(rows).ToList();
+        return _filter.ClassifyRecords(rows).ToArray();
     }
 }

@@ -4,25 +4,43 @@ import { UploadState } from "./Uploadstate";
 import { LoadingState } from "./Loadingstate";
 import { ResultState } from "./Resultstate";
 import { MOCK_ROWS } from "../../data/Mockrows";
+import { apiClient } from "@/api/client";
 
 type Phase = "upload" | "loading" | "result";
 
+type Toast = {
+    id: number;
+    message: string;
+    variant: "info" | "error";
+};
+
 // USE_MOCK mengontrol apakah /import akan benar-benar dipanggil atau tidak.
 // Set ke false saat backend sudah siap untuk integrasi.
-const USE_MOCK = true;
+const USE_MOCK = false;
 
 export function CsvFilterPage() {
     const [phase, setPhase] = useState<Phase>("upload");
     const [rows, setRows] = useState<AnnotatedRow[]>([]);
     const [uploadedFile, setUploadedFile] = useState<File | null>(null);
     const [backendError, setBackendError] = useState<string | undefined>();
+    const [toasts, setToasts] = useState<Toast[]>([]);
+    const [isExporting, setIsExporting] = useState(false);
 
+    function showToast(message: string, variant: Toast["variant"]) {
+        const id = Date.now();
+        setToasts((prev) => [...prev, { id, message, variant }]);
+        setTimeout(() => {
+            setToasts((prev) => prev.filter((t) => t.id !== id));
+        }, 4000);
+    }
     // Dipanggil oleh UploadState saat file valid dipilih.
     // Transisi: upload → loading, lalu kirim ke /import (atau pakai mock).
     async function handleFileSelected(file: File) {
         setUploadedFile(file);
         setBackendError(undefined);
         setPhase("loading");
+
+
 
         if (USE_MOCK) {
             // Simulasi network delay agar LoadingState dapat dilihat
@@ -34,13 +52,7 @@ export function CsvFilterPage() {
 
         // Integrasi nyata ke /import 
         try {
-            const formData = new FormData();
-            formData.append("file", file);
-
-            const response = await fetch(
-                `${import.meta.env.VITE_API_BASE_URL}/import`,
-                { method: "POST", body: formData }
-            );
+            const response = await apiClient.import(file);
 
             if (!response.ok) {
                 const body = await response.json().catch(() => ({}));
@@ -48,6 +60,7 @@ export function CsvFilterPage() {
             }
 
             const data: AnnotatedRow[] = await response.json();
+            console.log("sample row:", data[0]);
             setRows(data);
             setPhase("result");
         } catch (err) {
@@ -58,6 +71,40 @@ export function CsvFilterPage() {
             setBackendError(message);
             setPhase("upload");
         }
+    }
+
+    async function handleExport() {
+        if (!uploadedFile || isExporting) return;
+        setIsExporting(true);
+
+        try {
+            const response = await apiClient.export(uploadedFile);
+
+            if (response.status === 204) {
+                showToast("File CSV kosong, data tidak ada yang berstatus Accepted", "info");
+                return;
+            }
+
+            if (!response.ok) {
+                const body = await response.json().catch(() => ({}));
+                throw new Error(body.error ?? `Server error ${response.status}`)
+            }
+
+            // 200 OK
+            const blob = await response.blob();
+            const objectUrl = URL.createObjectURL(blob);
+            const anchor = document.createElement("a");
+            anchor.href = objectUrl;
+            anchor.download = uploadedFile.name.replace("csv", "_filtered.csv");
+            anchor.click();
+            URL.revokeObjectURL(objectUrl);
+        } catch (err) {
+            const message = err instanceof Error ? err.message : "Export gagal";
+            showToast(message, "error");
+        } finally {
+            setIsExporting(false);
+        }
+
     }
 
     // Dipanggil tombol "Upload ulang" atau saat user ingin reset.
@@ -111,11 +158,7 @@ export function CsvFilterPage() {
                         style={{ backgroundColor: "hsl(31.5 91.7% 62.6%)" }}
                         onMouseEnter={e => (e.currentTarget.style.backgroundColor = "hsl(31.5 91.7% 52%)")}
                         onMouseLeave={e => (e.currentTarget.style.backgroundColor = "hsl(31.5 91.7% 62.6%)")}
-                        onClick={() => {
-                            // Placeholder — akan diimplementasi di langkah Export
-                            // (stateless: kirim ulang uploadedFile ke /export)
-                            console.log("Export clicked, file:", uploadedFile?.name);
-                        }}
+                        onClick={handleExport}
                         className={[
                             "flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium",
                             "bg-orange-600 hover:bg-orange-900 active:bg-blue-800",
@@ -140,6 +183,21 @@ export function CsvFilterPage() {
                     </button>
                 </div>
             )}
+            {/* Toast stack — muncul bottom-left agar tidak tabrakan dengan tombol Export */}
+            <div className="absolute bottom-6 left-6 flex flex-col gap-2">
+                {toasts.map((toast) => (
+                    <div
+                        key={toast.id}
+                        className={[
+                            "px-4 py-3 rounded-lg text-sm text-white shadow-lg",
+                            "transition-opacity duration-300",
+                            toast.variant === "error" ? "bg-red-600" : "bg-gray-800",
+                        ].join(" ")}
+                    >
+                        {toast.message}
+                    </div>
+                ))}
+            </div>
         </div>
     );
 }

@@ -3,6 +3,16 @@ using EToolkit.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("Frontend", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173")
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
 builder.Services.AddScoped<IRecordIssueCollector, RecordIssueCollector>();
 builder.Services.AddScoped<IRecordFilteringService, RecordFilteringService>();
 builder.Services.AddScoped<IRecordImportService, RecordImportService>();
@@ -15,6 +25,7 @@ builder.Services.AddControllers();
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();
+app.UseCors("Frontend");
 
 app.MapControllers();
 app.MapHealthChecks("/health");

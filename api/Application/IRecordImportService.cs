@@ -4,5 +4,5 @@ namespace EToolkit.Application;
 
 public interface IRecordImportService
 {
-    List<CsvComponentPlacementRow> Import(Stream csvStream);
+    AnnotatedRow[] Import(Stream csvStream);
 }

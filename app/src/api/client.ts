@@ -11,6 +11,6 @@ async function postFile(endpoint: string, file: File): Promise<Response> {
 }
 
 export const apiClient = {
-    import: (file: File) => postFile("/import", file),
-    export: (file: File) => postFile("/export", file),
+    import: (file: File) => postFile("/api/placement/import", file),
+    export: (file: File) => postFile("/api/placement/export", file),
 };

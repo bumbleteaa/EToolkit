@@ -133,11 +133,10 @@ export function ResultState({ rows }: ResultStateProps) {
                                         {row.side}
                                     </td>
                                     <td style={getCellBg(row.status)} className="px-4 py-2.5 text-gray-500">
-                                        {row.issues.length > 0 ? (
+                                        {(row.issues?.length ?? 0) > 0 ? (
                                             <span className="flex flex-wrap gap-1">
                                                 {row.issues.map((issue) => (
-                                                    <span
-                                                    >
+                                                    <span key={issue}>
                                                         {issue}
                                                     </span>
                                                 ))}
