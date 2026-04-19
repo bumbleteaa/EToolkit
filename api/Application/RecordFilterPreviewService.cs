@@ -49,7 +49,7 @@ public class RecordFilterPreviewService
                     agg = new UnknownAgg(
                         Key: key,
                         SampleRaw: n.Raw,
-                        SampleDesignator: annotated.Row.Name,
+                        SampleName: annotated.Row.Name,
                         SampleSide: annotated.Row.Side,
                         SampleRowNumber: total,
                         Count: 0
@@ -75,11 +75,11 @@ public class RecordFilterPreviewService
                 Code: "UNKNOWN_FOOTPRINT",
                 Severity: Severity.Warning,
                 Message: $"Footprint '{x.SampleRaw}' (key: '{x.Key}') needs review. " +
-                         $"Sample at row {x.SampleRowNumber}, designator '{x.SampleDesignator}', side '{x.SampleSide}'. Total: {x.Count}.",
+                         $"Sample at row {x.SampleRowNumber}, name '{x.SampleName}', side '{x.SampleSide}'. Total: {x.Count}.",
                 Context: new IssueContext(
                     FootprintRaw: x.SampleRaw,
                     FootprintKey: x.Key,
-                    Designator: x.SampleDesignator,
+                    Name: x.SampleName,
                     Side: x.SampleSide,
                     RowNumber: x.SampleRowNumber,
                     Count: x.Count
@@ -117,7 +117,7 @@ public class RecordFilterPreviewService
     private sealed record UnknownAgg(
         string Key,
         string SampleRaw,
-        string? SampleDesignator,
+        string? SampleName,
         string? SampleSide,
         int? SampleRowNumber,
         int Count

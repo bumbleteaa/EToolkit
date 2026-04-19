@@ -1,4 +1,5 @@
 ﻿using EToolkit.Application;
+using EToolkit.Controllers;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EToolkit.Controller;
@@ -27,19 +28,7 @@ public class PlacementController : ControllerBase
             using var stream = file.OpenReadStream();
             var rows = _importService.Import(stream);
 
-            var dto = rows.Select((r, i) => new ImportRowDto(
-                RowIndex: i + 1,
-                Status: r.Status.ToString(),   // enum → "Accepted" | "Unknown" | "Rejected"
-                Comp: r.Row.comp ?? "",
-                Name: r.Row.Name ?? "",
-                Value: r.Row.Value ?? "",
-                Footprint: r.Row.Footprint ?? "",
-                Desc: r.Row.Desc ?? "",
-                Side: r.Row.Side ?? "",
-                Issues: r.RejectCode is null ? [] : [r.RejectCode]
-            ));
-
-            return Ok(dto);
+            return Ok(rows);
         }
         catch (Exception ex)
         {
@@ -59,7 +48,25 @@ public class PlacementController : ControllerBase
         using var stream = file.OpenReadStream();
         var result = service.Preview(stream, take);
 
-        return Ok(result);
+        //Flatten annotated row for frontend
+        var flatRows = result.Data.Rows.Select((r, i) => new FilterPreviewRowDto(RowIndex: i + 1,
+            Status: r.Status.ToString(),
+            Comp: r.Row.comp ?? "",
+            Name: r.Row.Name ?? "",
+            Value: r.Row.Value ?? "",
+            Footprint: r.Row.Footprint ?? "",
+            Desc: r.Row.Desc ?? "",
+            Side: r.Row.Side ?? "",
+            Issues: r.RejectCode is null ? [] : [r.RejectCode])).ToArray();
+
+        var dataDto = new FilterPreviewDataDto(
+            TotalCount: result.Data.TotalCount,
+            Rows: flatRows,
+            IsTruncated: result.Data.IsTruncated,
+            LimitApplied: result.Data.LimitApplied
+        );
+
+        return Ok(new PipelineResponse<FilterPreviewDataDto>(dataDto, result.Report));
     }
 
     [HttpPost("export")]
@@ -86,7 +93,7 @@ public class PlacementController : ControllerBase
             return NoContent(); // 204
 
         Response.ContentType = "text/csv; charset=utf-8";
-        Response.Headers.ContentDisposition = "attachment; filename=\"workingfile.csv\"";
+        Response.Headers.ContentDisposition = "attachment; filename=\"_filtered.csv\"";
 
         buffer.Seek(0, SeekOrigin.Begin);
         await buffer.CopyToAsync(Response.Body, cancellation);

@@ -27,7 +27,7 @@ public sealed record IssueContext(
     string? FootprintRaw = null,
     string? FootprintKey = null,
     string? FootprintCanonical = null,
-    string? Designator = null,
+    string? Name = null,
     string? Side = null,
     int? RowNumber = null,
     int? Count = null);

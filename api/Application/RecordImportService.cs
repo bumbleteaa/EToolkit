@@ -6,17 +6,14 @@ namespace EToolkit.Application;
 public class RecordImportService : IRecordImportService
 {
     private readonly ICsvRecordImporter _importer;
-    private readonly IRecordFilteringService _filter;
 
-    public RecordImportService(ICsvRecordImporter importer, IRecordFilteringService filter)
+    public RecordImportService(ICsvRecordImporter importer)
     {
         _importer = importer;
-        _filter = filter;
     }
 
-    public AnnotatedRow[] Import(Stream csvStream)
+    public CsvComponentPlacementRow[] Import(Stream csvStream)
     {
-        var rows = _importer.Import(csvStream);
-        return _filter.ClassifyRecords(rows).ToArray();
+        return _importer.Import(csvStream).ToArray();
     }
 }
