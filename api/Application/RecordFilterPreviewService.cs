@@ -2,6 +2,9 @@
 
 namespace EToolkit.Application;
 
+/// <summary>
+/// Orchestrates CSV import, row classification, and report generation into a single preview pipeline result.
+/// </summary>
 public class RecordFilterPreviewService
 {
     private const int HardCap = 1000;
@@ -9,9 +12,8 @@ public class RecordFilterPreviewService
 
     private readonly ICsvRecordImporter _recordImporter;
     private readonly IRecordFilteringService _recordFilter;
-    // IFootprintNormalizer tidak lagi diperlukan di sini — hasil normalisasi
-    // sudah ada di AnnotatedRow.Normalized, tidak perlu normalisasi ulang.
 
+    // Class constructor
     public RecordFilterPreviewService(
         ICsvRecordImporter recordImporter,
         IRecordFilteringService recordFilter)
@@ -20,6 +22,9 @@ public class RecordFilterPreviewService
         _recordFilter = recordFilter;
     }
 
+    /// <summary>
+    /// Classifies all rows from the CSV stream, collects unknown footprint aggregates, and returns paginated data with a diagnostic report.
+    /// </summary>
     public PipelineResponse<PreviewResult> Preview(Stream csvStream, int? take, bool includeTotalCount = true)
     {
         var limit = ResolveLimit(take);
@@ -32,19 +37,18 @@ public class RecordFilterPreviewService
         var total = 0;
         var unknown = new Dictionary<string, UnknownAgg>(StringComparer.OrdinalIgnoreCase);
 
+        // Iterate all classified rows, filling the page buffer and aggregating unknown footprints by normalized key.
         foreach (var annotated in classified)
         {
             total++;
             if (data.Count < limit) data.Add(annotated);
 
-            // Kita kumpulkan aggregasi hanya untuk Unknown — keduanya GENERIC dan UNKNOWN_FOOTPRINT
-            // adalah kandidat untuk dilaporkan ke operator sebagai item yang perlu ditinjau.
-            // Bug fix dari versi lama: sebelumnya preview mencari Unknown dari filtered rows
-            // (hanya Accepted), sehingga tidak mungkin ditemukan. Sekarang kita iterasi semua.
+            // Track unknown-status rows that carry a normalized footprint for aggregation.
             if (annotated.Status == RowStatus.Unknown && annotated.Normalized is { } n)
             {
                 var key = string.IsNullOrEmpty(n.Key) ? "(EMPTY)" : n.Key;
 
+                // Initialize a new aggregate entry if this footprint key has not been seen before.
                 if (!unknown.TryGetValue(key, out var agg))
                     agg = new UnknownAgg(
                         Key: key,
@@ -55,7 +59,7 @@ public class RecordFilterPreviewService
                         Count: 0
                     );
 
-                unknown[key] = agg with { Count = agg.Count + 1 };
+                unknown[key] = agg with { Count = agg.Count + 1 }; // Increment occurrence count for this footprint key.
             }
 
             if (!includeTotalCount && data.Count >= limit) break;
@@ -66,8 +70,7 @@ public class RecordFilterPreviewService
 
         var previewResult = new PreviewResult(effectiveTotal, data, truncated, limit);
 
-        // Issues report mencakup semua Unknown — operator bisa melihat footprint mana
-        // yang paling sering muncul dan perlu diprioritaskan untuk iterasi database.
+        // Convert the top unknown aggregates (by frequency) into structured pipeline issues for the report matters.
         var issues = unknown.Values
             .OrderByDescending(x => x.Count)
             .Take(MaxIssues)
@@ -87,6 +90,7 @@ public class RecordFilterPreviewService
             ))
             .ToArray();
 
+        // Build the diagnostic report, marking export as ready only when no unknown footprints remain.
         var report = new PipelineReport(
             Stage: "filter-preview",
             IsExportReady: unknown.Count == 0,
@@ -94,7 +98,7 @@ public class RecordFilterPreviewService
             Issues: issues
         );
 
-        return new PipelineResponse<PreviewResult>(previewResult, report);
+        return new PipelineResponse<PreviewResult>(previewResult, report);  // Wrap paginated data and diagnostic report into a single pipeline response.
     }
 
     private static int ResolveLimit(int? take)
@@ -105,8 +109,6 @@ public class RecordFilterPreviewService
         return Math.Min(take.Value, HardCap);
     }
 
-    // Rows sekarang List<AnnotatedRow> — frontend mendapat status + RejectCode tiap baris
-    // untuk keperluan color coding: hijau (Accepted), kuning (Unknown), merah (Rejected).
     public sealed record PreviewResult(
         int TotalCount,
         IReadOnlyList<AnnotatedRow> Rows,

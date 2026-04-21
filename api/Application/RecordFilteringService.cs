@@ -34,6 +34,7 @@ public sealed class RecordFilteringService : IRecordFilteringService
             .Where(r => r.Status == RowStatus.Accepted)
             .Select(r => r.Row);
 
+    // AnnotatedRow is the result row container, have a status of row instead of raw data
     public IEnumerable<AnnotatedRow> ClassifyRecords(IEnumerable<CsvComponentPlacementRow> rows)
     {
         foreach (var row in rows)

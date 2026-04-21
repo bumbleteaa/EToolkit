@@ -39,7 +39,11 @@ export default function App() {
                 <Sidebar
                     open={sidebarOpen}
                     activePage={activePage}
-                    onNavigate={(page) => setActivePage(page as Page)}
+                    onNavigate={(page) => {
+                        setActivePage(page as Page)
+                        setSidebarOpen(false);
+                    }}
+
                 />
                 <main className="flex-1 overflow-hidden">
                     {renderPage()}

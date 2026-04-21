@@ -1,9 +1,8 @@
 import { useState } from "react";
-import type { AnnotatedRow } from "../../types/annotatedRow";
+import type { FilterPreviewRowDto, PipelineReport, PipelineResponse, FilterPreviewDataDto } from "@/types/filterPreview";
 import { UploadState } from "./Uploadstate";
 import { LoadingState } from "./Loadingstate";
 import { ResultState } from "./Resultstate";
-import { MOCK_ROWS } from "../../data/Mockrows";
 import { apiClient } from "@/api/client";
 
 type Phase = "upload" | "loading" | "result";
@@ -14,17 +13,16 @@ type Toast = {
     variant: "info" | "error";
 };
 
-// USE_MOCK mengontrol apakah /import akan benar-benar dipanggil atau tidak.
-// Set ke false saat backend sudah siap untuk integrasi.
-const USE_MOCK = false;
 
 export function CsvFilterPage() {
     const [phase, setPhase] = useState<Phase>("upload");
-    const [rows, setRows] = useState<AnnotatedRow[]>([]);
+    const [rows, setRows] = useState<FilterPreviewRowDto[]>([]);
     const [uploadedFile, setUploadedFile] = useState<File | null>(null);
     const [backendError, setBackendError] = useState<string | undefined>();
+    const [report, setReport] = useState<PipelineReport | null>(null);
     const [toasts, setToasts] = useState<Toast[]>([]);
     const [isExporting, setIsExporting] = useState(false);
+    const [approved, setApproved] = useState<Set<string>>(new Set());
 
     function showToast(message: string, variant: Toast["variant"]) {
         const id = Date.now();
@@ -33,41 +31,30 @@ export function CsvFilterPage() {
             setToasts((prev) => prev.filter((t) => t.id !== id));
         }, 4000);
     }
-    // Dipanggil oleh UploadState saat file valid dipilih.
-    // Transisi: upload → loading, lalu kirim ke /import (atau pakai mock).
+    // Called by UploadState when a valid file is selected.
+    // Transitions: upload -> loading, then sends to /filter-preview.
     async function handleFileSelected(file: File) {
         setUploadedFile(file);
         setBackendError(undefined);
         setPhase("loading");
 
-
-
-        if (USE_MOCK) {
-            // Simulasi network delay agar LoadingState dapat dilihat
-            await new Promise((r) => setTimeout(r, 1200));
-            setRows(MOCK_ROWS);
-            setPhase("result");
-            return;
-        }
-
-        // Integrasi nyata ke /import 
+        // Integrasi nyata ke /filter-preview
         try {
-            const response = await apiClient.import(file);
+            const response = await apiClient.filterPreview(file);
 
             if (!response.ok) {
                 const body = await response.json().catch(() => ({}));
                 throw new Error(body.error ?? `Server error ${response.status}`);
             }
 
-            const data: AnnotatedRow[] = await response.json();
-            console.log("sample row:", data[0]);
-            setRows(data);
+            const body: PipelineResponse<FilterPreviewDataDto> = await response.json();
+            setRows(body.data.rows);
+            setReport(body.report);
             setPhase("result");
         } catch (err) {
-            // Apapun error-nya (network, 4xx, 5xx) — kembali ke Upload state
-            // dengan pesan error yang informatif.
+            // Any error (network, 4xx, 5xx) returns to Upload state with an error message.
             const message =
-                err instanceof Error ? err.message : "Terjadi kesalahan yang tidak diketahui.";
+                err instanceof Error ? err.message : "An unknown error occurred.";
             setBackendError(message);
             setPhase("upload");
         }
@@ -78,10 +65,10 @@ export function CsvFilterPage() {
         setIsExporting(true);
 
         try {
-            const response = await apiClient.export(uploadedFile);
+            const response = await apiClient.export(uploadedFile, approved);
 
             if (response.status === 204) {
-                showToast("File CSV kosong, data tidak ada yang berstatus Accepted", "info");
+                showToast("No Accepted rows to export.", "info");
                 return;
             }
 
@@ -107,11 +94,12 @@ export function CsvFilterPage() {
 
     }
 
-    // Dipanggil tombol "Upload ulang" atau saat user ingin reset.
+    // Resets all state and returns to the Upload phase.
     function handleReset() {
         setRows([]);
         setUploadedFile(null);
         setBackendError(undefined);
+        setApproved(new Set());
         setPhase("upload");
     }
 
@@ -148,7 +136,7 @@ export function CsvFilterPage() {
                     />
                 )}
                 {phase === "loading" && <LoadingState />}
-                {phase === "result" && <ResultState rows={rows} />}
+                {phase === "result" && <ResultState rows={rows} report={report ?? undefined} onApprovedChange={setApproved} />}
             </div>
 
             {/* Export button — sticky bottom-right, hanya tampil di phase result */}

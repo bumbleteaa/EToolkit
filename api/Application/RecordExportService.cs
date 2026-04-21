@@ -1,7 +1,7 @@
-using EToolkit.Application;
 using EToolkit.Infrastructure;
 
 namespace EToolkit.Application;
+
 
 public sealed class RecordExportService : IRecordExportService
 {
@@ -34,10 +34,5 @@ public sealed class RecordExportService : IRecordExportService
         var limit = take is null ? HardCap : Math.Clamp(take.Value, 1, HardCap);
 
         return _exporter.WriteAsync(exportable.Take(limit), csvOutput, cancellation);
-    }
-
-    public Task ExportAsync(Stream csvInput, Stream csvOutput, int? take, CancellationToken cancellation)
-    {
-        throw new NotImplementedException();
     }
 }
