@@ -24,6 +24,9 @@ public sealed class CsvRecordExporter : IRecordWriterService<CsvComponentPlaceme
 
         csv.Context.RegisterClassMap<CsvRowMap>();
 
+        csv.WriteHeader<CsvComponentPlacementRow>();
+        await csv.NextRecordAsync();
+
         foreach (var row in rows)
         {
             cancellation.ThrowIfCancellationRequested();
