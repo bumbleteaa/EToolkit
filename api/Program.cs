@@ -1,4 +1,5 @@
 using EToolkit.Application;
+using EToolkit.Application.Logger;
 using EToolkit.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,6 +13,10 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod();
     });
 });
+
+//Observeability
+builder.Services.AddSingleton<IAnnotatedRowLogPolicy, AnnotatedRowLogPolicy>();
+builder.Services.AddSingleton<IAnnotatedRowLogger, AnnotatedRowLogger>();
 
 builder.Services.AddScoped<IRecordIssueCollector, RecordIssueCollector>();
 builder.Services.AddScoped<IRecordFilteringService, RecordFilteringService>();

@@ -12,14 +12,16 @@ public class RecordFilterPreviewService
 
     private readonly ICsvRecordImporter _recordImporter;
     private readonly IRecordFilteringService _recordFilter;
+    private readonly ILogger<RecordFilterPreviewService> _logger;
 
     // Class constructor
     public RecordFilterPreviewService(
         ICsvRecordImporter recordImporter,
-        IRecordFilteringService recordFilter)
+        IRecordFilteringService recordFilter, ILogger<RecordFilterPreviewService> logger)
     {
         _recordImporter = recordImporter;
         _recordFilter = recordFilter;
+        _logger = logger;
     }
 
     /// <summary>
@@ -35,6 +37,8 @@ public class RecordFilterPreviewService
         var data = new List<AnnotatedRow>(capacity);
 
         var total = 0;
+        var acceptedCount = 0;
+        var rejectedCount = 0;
         var unknown = new Dictionary<string, UnknownAgg>(StringComparer.OrdinalIgnoreCase);
 
         // Iterate all classified rows, filling the page buffer and aggregating unknown footprints by normalized key.
@@ -44,26 +48,29 @@ public class RecordFilterPreviewService
             if (data.Count < limit) data.Add(annotated);
 
             // Track unknown-status rows that carry a normalized footprint for aggregation.
+            if (annotated.Status == RowStatus.Accepted) acceptedCount++;
+            else if (annotated.Status == RowStatus.Rejected) rejectedCount++;
+
+            if (data.Count < limit) data.Add(annotated);
+
             if (annotated.Status == RowStatus.Unknown && annotated.Normalized is { } n)
             {
                 var key = string.IsNullOrEmpty(n.Key) ? "(EMPTY)" : n.Key;
-
-                // Initialize a new aggregate entry if this footprint key has not been seen before.
                 if (!unknown.TryGetValue(key, out var agg))
-                    agg = new UnknownAgg(
-                        Key: key,
-                        SampleRaw: n.Raw,
-                        SampleName: annotated.Row.Name,
-                        SampleSide: annotated.Row.Side,
-                        SampleRowNumber: total,
-                        Count: 0
-                    );
-
-                unknown[key] = agg with { Count = agg.Count + 1 }; // Increment occurrence count for this footprint key.
+                    agg = new UnknownAgg(key, n.Raw, annotated.Row.Name, annotated.Row.Side, total, 0);
+                unknown[key] = agg with { Count = agg.Count + 1 };
             }
 
             if (!includeTotalCount && data.Count >= limit) break;
         }
+
+        // TP-6: pipeline summary — one log entry per request that captures the full picture.
+        // If total doesn't add up to accepted + unknown + rejected, something is wrong upstream.
+        _logger.LogInformation(
+            "[TP-6] Pipeline summary: Total={Total}, Accepted={Accepted}, Unknown={Unknown}, Rejected={Rejected}, UniqueFP={UniqueFP}, ExportReady={ExportReady}",
+            total, acceptedCount, unknown.Values.Sum(x => x.Count), rejectedCount,
+            unknown.Count, unknown.Count == 0);
+
 
         var effectiveTotal = includeTotalCount ? total : data.Count;
         var truncated = includeTotalCount && data.Count < total;

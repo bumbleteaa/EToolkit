@@ -77,13 +77,13 @@ export function UploadState({ onFileSelected, errorMessage }: UpdloadStateProps)
                     "py-16 px-8 cursor-pointer select-none",
                     "transition-colors duration-200",
                     isDragging
-                        ? "border-blue-500 bg-blue-50 "
-                        : "border-gray-300  hover:border-blue-400 hover:bg-gray-50",
+                        ? "border-[var(--accent)] bg-orange-50"
+                        : "border-gray-300 hover:border-[var(--accent)] hover:bg-gray-50"
                 ].join(" ")}
             >
                 {/* Ikon upload sederhana dengan SVG inline */}
                 <svg
-                    className={`w-10 h-10 transition-colors duration-200 ${isDragging ? "text-blue-500" : "text-gray-400"
+                    className={`w-10 h-10 transition-colors duration-200 ${isDragging ? "text-[var(--accent)]" : "text-gray-400"
                         }`}
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"

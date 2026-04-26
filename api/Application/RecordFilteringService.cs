@@ -11,6 +11,7 @@ public sealed class RecordFilteringService : IRecordFilteringService
 {
     private readonly IFootprintNormalizer _normalizer;
     private readonly IRecordIssueCollector _collector;
+    private readonly ILogger<RecordFilteringService> _logger;
 
     //Mappung each Normalized kind to classificaton decision
     private static readonly IReadOnlyDictionary<NormalizedKind, Func<CsvComponentPlacementRow, NormalizedFootprint, AnnotatedRow>>
@@ -22,10 +23,11 @@ public sealed class RecordFilteringService : IRecordFilteringService
         [NormalizedKind.NonPlaceable] = (row, n) => Reject(row, "NON_PLACEABLE", n),
     };
 
-    public RecordFilteringService(IFootprintNormalizer normalizer, IRecordIssueCollector collector)
+    public RecordFilteringService(IFootprintNormalizer normalizer, IRecordIssueCollector collector, ILogger<RecordFilteringService> logger)
     {
         _normalizer = normalizer ?? throw new ArgumentNullException(nameof(normalizer));
         _collector = collector ?? throw new ArgumentNullException(nameof(collector));
+        _logger = logger ?? throw new ArgumentException(nameof(logger));
     }
 
     // Thin wrapper — export dan import hanya perlu yang benar-benar Accepted.
@@ -37,10 +39,18 @@ public sealed class RecordFilteringService : IRecordFilteringService
     // AnnotatedRow is the result row container, have a status of row instead of raw data
     public IEnumerable<AnnotatedRow> ClassifyRecords(IEnumerable<CsvComponentPlacementRow> rows)
     {
-        foreach (var row in rows)
+        foreach (var (row, index) in rows.Select((r, i) => (r, i + 1)))
         {
             var annotated = Classify(row);
-            _collector.Report(annotated);  // ← satu-satunya titik pelaporan
+
+            // TP-2: emitted here because index context lives here, not inside Classify().
+            // We log after Classify() so we have access to the NormalizedFootprint result.
+            if (annotated.Normalized is { } n)
+                _logger.LogDebug(
+                    "[TP-2] #{RowIndex} Normalizer: Raw='{Raw}' → Canonical='{Canonical}', Kind='{Kind}', Family='{Family}', Name='{Name}'",
+                    index, n.Raw, n.Canonical, n.Kind, n.Family ?? "—", row.Name);
+
+            _collector.Report(annotated);
             yield return annotated;
         }
     }

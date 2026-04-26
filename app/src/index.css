@@ -12,7 +12,7 @@
         --primary-foreground: 0 0% 98%;
         --secondary: 0 0% 98%;
         --secondary-foreground: 0 0% 9%;
-        --accent: 31.5 91.7% 62.6%;
+        --accent: hsl(31.5 91.7% 62.6%);
         --accent-foreground: 0 0% 100%;
         --destructive: 0 84.2% 60.2%;
         --destructive-foreground: 0 0% 98%;

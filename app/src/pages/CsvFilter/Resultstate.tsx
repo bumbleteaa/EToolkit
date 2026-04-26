@@ -35,6 +35,7 @@ export function ResultState({ rows, report, onApprovedChange: onApprovedNamesCha
     const [approvedIndices, setApprovedIndices] = useState<Set<number>>(new Set());
 
     const unknownRows = rows.filter(r => r.status === "Unknown");
+    const rejectedRows = rows.filter(r => r.status === "Rejected");
 
     function notifyParent(next: Set<number>) {
         const names = new Set(
@@ -135,6 +136,14 @@ export function ResultState({ rows, report, onApprovedChange: onApprovedNamesCha
                             ({approvedIndices.size} dipilih)
                         </span>
                     )}
+                </div>
+            )}
+
+            {/* Rejected tab hint */}
+            {activeTab === "rejected" && rejectedRows.length > 0 && (
+                <div className="px-4 py-2 text-xs text-red-700 bg-red-50 border-b border-red-200">
+                    <span className="font-medium">Komponen ini tidak akan diekspor.</span>
+                    {" "}Penyebab umum: footprint non-placeable (CONN, HDR, TP), nilai DNP, atau footprint kosong.
                 </div>
             )}
 

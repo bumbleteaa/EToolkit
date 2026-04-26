@@ -4,14 +4,10 @@ import Header from "./components/layout/Header";
 import Footer from "./components/layout/Footer";
 import { CsvFilterPage } from "./pages/CsvFilter/Csvfilterpage";
 
-// Daftar halaman yang dikenal aplikasi.
-// Nanti kalau ada halaman baru, cukup tambahkan entry di sini
-// dan tambahkan case di renderPage() di bawah.
 type Page = "csv-filter";
 
 export default function App() {
-    const [sidebarOpen, setSidebarOpen] = useState(false);
-    // null = belum ada halaman yang dipilih (blank state seperti semula)
+    const [sidebarOpen, setSidebarOpen] = useState(true);
     const [activePage, setActivePage] = useState<Page | null>(null);
 
     function renderPage() {
@@ -19,7 +15,6 @@ export default function App() {
             case "csv-filter":
                 return <CsvFilterPage />;
             default:
-                // Blank state — ditampilkan sebelum user memilih menu apapun
                 return (
                     <div className="flex items-center justify-center h-full min-h-64">
                         <span className="text-xs font-mono text-muted-foreground border border-dashed border-border px-7 py-4 rounded-md">
@@ -32,10 +27,10 @@ export default function App() {
 
     return (
         <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden">
-            <Header onToggleSidebar={() => setSidebarOpen(o => !o)} />
+            <Header
+                sidebarOpen={sidebarOpen}
+                onToggleSidebar={() => setSidebarOpen(o => !o)} />
             <div className="flex flex-1 overflow-hidden">
-                {/* Sidebar menerima activePage dan setter-nya supaya bisa
-                    menandai item yang aktif (highlight) dan memicu navigasi */}
                 <Sidebar
                     open={sidebarOpen}
                     activePage={activePage}
